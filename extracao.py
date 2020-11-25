@@ -5,14 +5,14 @@ import numpy as np
 import psycopg2
 import os
 
-pasta = "pdf"
-caminho = []
-for l in os.listdir(pasta):
-    if l.endswith('.pdf'):
-        caminho = caminho + [l]
+pasta = "pdf"                                                                           #local ondem estão salvos os pdf
+caminho = []                                                                            #Array para guardar cada arquivo
+for l in os.listdir(pasta):                                                             #percorrer os arquivos listados na pasta
+    if l.endswith('.pdf'):                                                              #pegando apenas os arquivos pdf
+        caminho = caminho + [l]                                                         #vai incluindo os arquivos dentro do array
         
-for c in range(len(caminho)):
-    pdf_path = ("./pdf/%s")%caminho[c]
+for c in range(len(caminho)):                                                           #laço de repetição para percorrer todos os pdf        
+    pdf_path = ("./pdf/%s")%caminho[c]                                                  #variavel para receber o caminho do pdf
     df = read_pdf(pdf_path,pages='all', encoding='ANSI', stream=True)                   #carrega os pdf
     df = df.dropna(axis=0, thresh=2)                                                    #remove as linhas onde só existe um dado
     df = df.dropna(axis=1, how='all')                                                   #remove as colunas que não tem nenhum dado
@@ -35,32 +35,32 @@ for c in range(len(caminho)):
             if j > 0 :                                                                  #começar o tratamento da segunda coluna
                 list[i][j] = list[i][j].translate({ord(k):None for k in 'jan%/fev'})    #deixa apenas os numeros e a virgula
                 list[i][j] = list[i][j][-6:]                                            #deixa apenas os ultimos 6 caracteres
-                list[i][j] = float(list[i][j].replace(',', '.'))
-                if list[i][j] > 100 :
-                    list[i][j] = str(list[i][j])
-                    list[i][j] = list[i][j][-5:]
-                    list[i][j] = float(list[i][j])
+                list[i][j] = float(list[i][j].replace(',', '.'))                        #transforma a porcentagem em float
+                if list[i][j] > 100 :                                                   #se a porcetagem maior que 100
+                    list[i][j] = str(list[i][j])                                        #transforma a porcentagem novamente em string
+                    list[i][j] = list[i][j][-5:]                                        #deixa apenas os ultimos 5 caracteres
+                    list[i][j] = float(list[i][j])                                      #transforma novamente em float
                 
             if j == 0 :                                                                 #faz a seleção da primeira coluna
                 list[i][j] = list[i][j][-9:]                                            #deixa apenas as 9 ultimas strings
-                if len(list[i][j]) < 9:
-                    list[i][j] = list[i][j].zfill(9)
-    con = psycopg2.connect(host='localhost', database ='teste',
+                if len(list[i][j]) < 9:                                                 #se a data tiver apenas 9 string
+                    list[i][j] = list[i][j].zfill(9)                                    #faz a inclusão do 0 à esquerda
+    con = psycopg2.connect(host='localhost', database ='teste',                         #seta a variável de conexão com o banco de dados local
                        user='postgres',password='root')
-    cur = con.cursor()
-    sql = 'SELECT "Data" FROM dados'
-    cur.execute(sql)
-    recupera = cur.fetchall()
-    teste = []
-    for n in recupera:
-        for j in n:
-            j = j.strftime("%d-%b-%y")
-            j = j.lower()
-            teste = teste + [j] 
+    cur = con.cursor()                                                                  #seta a variável do cursor
+    sql = 'SELECT "Data" FROM dados'                                                    #seleciona as datas já inclusas
+    cur.execute(sql)                                                                    #roda o sql
+    recupera = cur.fetchall()                                                           #recupera os dados
+    teste = []                                                                          #array para armazenar as datas
+    for n in recupera:                                                                  #percorrer as datas
+        for j in n:             
+            j = j.strftime("%d-%b-%y")                                                  #converte a data em string com determinada mascara
+            j = j.lower()                                                               #coloca todas as letras em minusculo para fazer a comparação
+            teste = teste + [j]                                                         #array recebe a data
     for i in range(linha):                                                              #laço de repetição para percorrer as linhas
-        if list[i][0] not in teste:
+        if list[i][0] not in teste:                                                     #Se a data não existir no array com os dados da tabela
             sql = ("INSERT INTO dados VALUES ('%s','%f','%f','%f','%f','%f','%f','%f','%f');"
-                   %(list[i][0],list[i][1],list[i][2],list[i][3],list[i][4],list[i][5],list[i][6],
+                   %(list[i][0],list[i][1],list[i][2],list[i][3],list[i][4],list[i][5],list[i][6],  #REALIZA A INSERÇÃO DOS DADOS
                      list[i][7],list[i][8]))
             cur.execute(sql)
             con.commit ()
